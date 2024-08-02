@@ -1,0 +1,10 @@
+
+.DS_Store
+
+index.js
+public/
+node_modules/
+*/*.js
+dev.*
+.env
+dist/
