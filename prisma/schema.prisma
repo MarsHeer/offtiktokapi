@@ -1,0 +1,58 @@
+// Define your database connection
+// Example for SQLite
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Define the Prisma client generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Carousel {
+    id       Int    @id @default(autoincrement())
+    images   String
+    audio    String
+    post     Post?  @relation(fields: [postId], references: [id])
+    postId   Int?   @unique
+}
+
+model Video {
+    id          Int    @id @default(autoincrement())
+    mp4URL      String
+    hlsURL      String?
+    thumbnail   String?
+    post        Post?  @relation(fields: [postId], references: [id])
+    postId      Int?   @unique
+}
+
+model Author {
+    id          Int      @id @default(autoincrement())
+    tiktokId    String   @unique
+    name        String
+    handle      String    @default("")
+    image       String
+    posts       Post[] 
+}
+
+model Post {
+    id          Int      @id @default(autoincrement())
+    authorId    Int
+    author      Author   @relation(fields: [authorId], references: [id])
+    type        String
+    tiktokId    String   @unique
+    video       Video?
+    carousel    Carousel?
+    postDescription String?
+    originalURL String   @default("")
+    createdAt   DateTime @default(now())
+    deleted   Boolean  @default(false)
+}
+
+model Session {
+    id          Int      @id @default(autoincrement())
+    token       String   @unique
+    createdAt   DateTime @default(now())
+    watched     String @default("")
+}
