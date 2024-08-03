@@ -10,9 +10,16 @@ It also includes a minimalistic TikTok feed that allows watching videos recommen
 
 This backend is built in node.js and can be quite simply deployed:
 
-### 1. Install Node & npm (or your package manager of preference)
+### Using Docker
 
-#### macOS
+    - Initialize as a docker container running `./docker-up.sh`
+    - If script fails due to permissions settings, run `chmod +x ./docker-up.sh` then run the script again.
+
+### On your own machine
+
+#### 1. Install Node & npm (or your package manager of preference)
+
+##### macOS
 
 1.  **Using Homebrew**:
 
@@ -24,7 +31,7 @@ This backend is built in node.js and can be quite simply deployed:
 
     - Install Node.js and npm:
       `brew  install  node`
-          brew  install  node
+      brew install node
 
 2.  **Using Node Version Manager (nvm)**:
 
@@ -48,7 +55,7 @@ This backend is built in node.js and can be quite simply deployed:
       nvm  install  node
       ```
 
-#### Linux
+##### Linux
 
 1.  **Using NodeSource Binaries**:
 
@@ -79,7 +86,7 @@ This backend is built in node.js and can be quite simply deployed:
 
       `nvm  install  node`
 
-#### Windows
+##### Windows
 
 1.  **Using Node.js Installer**:
 
@@ -103,28 +110,28 @@ node  -v
 npm  -v
 ```
 
-### 2. Install dependencies
+#### 2. Install dependencies
 
 To instal project dependencies, run: `npm install`
 
-### 3. Configure your .env
+#### 3. Configure your .env
 
 Create a `.env` file and copy the contets of the `.env.template` file included in the repository.
 
 Give your prisma DB a name
 
-### 4. Apply prisma migrations
+#### 4. Apply prisma migrations
 
 Before your initial development run, you need to apply the prisma migrations, run: `npx prisma migrate dev`
 
-### 5. Ready for dev!
+#### 5. Ready for dev!
 
 Run `npm run dev` to get your development server running in port `2000`
 
 ## Other scripts and important steps
 
 The repository also includes a `npm run build` and `npm run start` scripts.
-These are intended for development servers,
+These are intended for production servers,
 `npm run build` will compile your typescript and apply any missing prisma migrations.
 `npm run start` will start up the compiled `index.ts` on your server
 
@@ -132,7 +139,7 @@ Need features like service permanence and startup scripts? [Check out pm2](https
 
 # Collaborating
 
-Collaborations are welcome! Please feel free to support the project by creating requests or pull requests
+Collaboration is welcome! Please feel free to support the project by opening an issue or pull request
 
 # License
 
