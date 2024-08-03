@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - '2000:2000'
+    environment:
+      DATABASE_URL: 'file:./dev.db'
+    volumes:
+      - .:/usr/src/app
+    command: npm start

@@ -12,8 +12,8 @@ import {
   fetchPostByTiktokId,
   findAuthorByTiktokId,
 } from '../utils/db-helpers';
+import { getBrowser } from './puppeteer';
 //import { convertToHLS, extractThumbnail } from "./video-processing";
-import { getBrowser } from '../utils/puppeteer';
 
 const tiktoks = [
   //video
