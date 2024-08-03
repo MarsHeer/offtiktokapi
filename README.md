@@ -12,8 +12,16 @@ This backend is built in node.js and can be quite simply deployed:
 
 ### Using Docker
 
-    - Initialize as a docker container running `./docker-up.sh`
-    - If script fails due to permissions settings, run `chmod +x ./docker-up.sh` then run the script again.
+#### 1. Configure your .env
+
+Create a `.env` file and copy the contets of the `.env.template` file included in the repository.
+
+Give your prisma DB a name
+
+### 2. Boot container
+
+- Initialize as a docker container running `./docker-up.sh`
+- If script fails due to permissions settings, run `chmod +x ./docker-up.sh` then run the script again.
 
 ### On your own machine
 
