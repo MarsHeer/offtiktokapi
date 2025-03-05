@@ -21,7 +21,8 @@ export const parsedVideoData = z.object({
       image: z.string(),
       handle: z.string(),
     })
-    .nullable(),
+    .nullable()
+    .optional(),
   music: z
     .object({
       url: z.string().nullable().optional(),
