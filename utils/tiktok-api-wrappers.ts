@@ -55,31 +55,80 @@ export const tiktokFetchOptions = ({
 });
 
 export const parseTikTokData = async (res: Response) => {
-  let cookies: string[] = [];
-  for (let [key, value] of res.headers.entries()) {
-    if (key.toLowerCase() === 'set-cookie') {
-      cookies.push(value);
+  try {
+    if (!res.ok) {
+      throw new Error(`HTTP Response not OK: ${res.status}`);
     }
+
+    let cookies: string[] = [];
+    for (let [key, value] of res.headers.entries()) {
+      if (key.toLowerCase() === 'set-cookie') {
+        cookies.push(value);
+      }
+    }
+
+    const textContent = await res.text();
+    if (!textContent) {
+      throw new Error('Empty response content');
+    }
+
+    console.log('Response content length:', textContent.length);
+
+    const dom = new jsdom.JSDOM(textContent);
+    const rehydrationElement = dom.window.document.querySelector(
+      '#__UNIVERSAL_DATA_FOR_REHYDRATION__'
+    );
+
+    if (!rehydrationElement) {
+      console.error('Rehydration element not found in DOM');
+      // Try fallback data extraction
+      const scriptElements = dom.window.document.querySelectorAll('script');
+      for (const script of scriptElements) {
+        const content = script.textContent || '';
+        if (content.includes('SIGI_STATE')) {
+          const match = content.match(/SIGI_STATE["]?\s*=\s*({.+?});/);
+          if (match && match[1]) {
+            const jsonParseData = JSON.parse(match[1]);
+            return extractDataFromJson(jsonParseData, cookies);
+          }
+        }
+      }
+      throw new Error('Could not find TikTok data in page');
+    }
+
+    const rehydrationData = rehydrationElement.textContent;
+    if (!rehydrationData) {
+      throw new Error('Rehydration data is empty');
+    }
+
+    let jsonParseData;
+    try {
+      jsonParseData = JSON.parse(rehydrationData);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      throw new Error('Failed to parse rehydration data');
+    }
+
+    return extractDataFromJson(jsonParseData, cookies);
+  } catch (error) {
+    console.error('Parse TikTok Data Error:', error);
+    throw error;
   }
+};
 
-  const textContent = await res.text();
+// Helper function to extract data from JSON
+const extractDataFromJson = (jsonData: any, cookies: string[]) => {
+  const deviceId = findObjectWithKey(jsonData, 'wid');
+  const odinId = findObjectWithKey(jsonData, 'odinId');
+  const webIdLastTime = findObjectWithKey(jsonData, 'webIdCreatedTime');
+  const abTest = findObjectWithKey(jsonData, 'abTestVersion');
+  const abTestVersions: string[] = abTest ? abTest.versionName?.split(',') : [];
+  const msToken = findObjectWithKey(jsonData, 'msToken');
 
-  const dom = new jsdom.JSDOM(textContent);
-  const rehydrationData = dom.window.document.querySelector(
-    '#__UNIVERSAL_DATA_FOR_REHYDRATION__'
-  )?.textContent;
-  const jsonParseData = rehydrationData ? JSON.parse(rehydrationData) : null;
-
-  if (!jsonParseData) {
-    return new Error('No Data Found');
+  if (!deviceId || !odinId) {
+    console.error('Missing required fields:', { deviceId, odinId });
+    throw new Error('Missing required TikTok data fields');
   }
-
-  const deviceId = findObjectWithKey(jsonParseData, 'wid');
-  const odinId = findObjectWithKey(jsonParseData, 'odinId');
-  const webIdLastTime = findObjectWithKey(jsonParseData, 'webIdCreatedTime');
-  const abTest = findObjectWithKey(jsonParseData, 'abTestVersion');
-  const abTestVersions: string[] = abTest ? abTest.versionName.split(',') : [];
-  const msToken = res.headers.get('x-ms-token');
 
   return {
     deviceId,
