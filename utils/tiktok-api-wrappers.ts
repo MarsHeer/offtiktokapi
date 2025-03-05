@@ -166,7 +166,7 @@ export const fetchAndFollowURL = async (url: string) => {
         ? fetchContent.headers.get('location')
         : fetchURL;
     if (redirectLocation) {
-      console.log('Redirected');
+      console.log(`Redirected from ${url} to ${redirectLocation}`);
       parsedURL = new URL(redirectLocation);
       fetchContent = await fetch(redirectLocation, {
         headers: {
