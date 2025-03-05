@@ -19,11 +19,8 @@ export const downloadFileHelper = async (
   path: string,
   cookies?: string
 ): Promise<void> => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, {
-      recursive: true,
-    });
-  }
+  ensureDirectoryExistence(path);
+
   const file = fs.createWriteStream(path);
 
   let options = {};
