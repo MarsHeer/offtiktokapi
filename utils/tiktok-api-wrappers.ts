@@ -214,22 +214,29 @@ export const fetchPostByUrlAndMode = async (
   sessionToken?: string
 ) => {
   try {
+    // Validate URL first
+    if (!url) {
+      throw new Error('Invalid URL provided');
+    }
+
     const { response, url: finalURL } = await fetchAndFollowURL(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
 
     const postId = finalURL.pathname.split('/').at(-1);
     if (!postId) {
-      return new Error('Video ID not found');
+      throw new Error('Video ID not found in URL');
     }
-    const findPost = await fetchPostByTiktokId(postId);
 
+    const findPost = await fetchPostByTiktokId(postId);
     if (findPost) {
       return findPost;
     }
 
     const parseData = await parseTikTokData(response);
-
     if (!parseData || parseData instanceof Error) {
-      return new Error('Something went wrong');
+      throw new Error('Failed to parse TikTok data');
     }
 
     const {
@@ -267,7 +274,15 @@ export const fetchPostByUrlAndMode = async (
       }
     );
 
+    if (!fetchContent.ok) {
+      throw new Error(`API request failed with status: ${fetchContent.status}`);
+    }
+
     const jsonContent = await fetchContent.json();
+    if (!jsonContent) {
+      throw new Error('Failed to parse API response');
+    }
+
     let watchedIds;
     if (sessionToken) {
       const userSession = await fetchSessionByToken(sessionToken);
@@ -277,9 +292,8 @@ export const fetchPostByUrlAndMode = async (
     }
 
     const videoData = await pullVideoData(jsonContent, mode, watchedIds);
-
     if (videoData instanceof Error) {
-      return videoData;
+      throw videoData;
     }
 
     const { author, description, id: postID, image, music, video } = videoData;
@@ -390,7 +404,10 @@ export const fetchPostByUrlAndMode = async (
     }
     return await fetchPostByTiktokId(postID);
   } catch (error) {
-    return error instanceof Error ? error : new Error('Something went wrong');
+    console.error('TikTok API Error:', error);
+    return error instanceof Error
+      ? error
+      : new Error('Failed to fetch TikTok content');
   }
 };
 
