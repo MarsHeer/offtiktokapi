@@ -4,6 +4,7 @@ import { fetchNewestPost } from './utils/db-helpers';
 import { getVideoByUrl } from './routes/by-url';
 import { getVideoById } from './routes/by-id';
 import { getRelatedVideos } from './routes/get-video';
+import logger from './utils/logger';
 
 const app = express();
 const port = 2000;
@@ -35,5 +36,5 @@ app.get('/latest', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  logger.info(`Server running at http://localhost:${port}`);
 });

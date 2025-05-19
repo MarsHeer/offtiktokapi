@@ -2,6 +2,7 @@ import fs from 'fs';
 import https from 'node:https';
 import path from 'path';
 import { deletePost, fetchOldestPost } from './db-helpers';
+import logger from './logger';
 
 // Ensure the directory exists before writing the file
 export const ensureDirectoryExistence = (filePath: string) => {
@@ -35,7 +36,7 @@ export const downloadFileHelper = async (
   }
 
   if (cookies) {
-    console.log(`curl -v ${path} -H "Cookie: ${cookies}" "${url}"`);
+    logger.info(`curl -v ${path} -H "Cookie: ${cookies}" "${url}"`);
   }
 
   return new Promise((resolve, reject) => {
@@ -45,8 +46,8 @@ export const downloadFileHelper = async (
         file.on('finish', () => {
           file.close(() => {
             if (cookies) {
-              console.log('Download completed!');
-              console.log({ path: file.path });
+              logger.info('Download completed!');
+              logger.info({ path: file.path });
             }
             resolve();
           });
@@ -54,7 +55,7 @@ export const downloadFileHelper = async (
       })
       .on('error', (err) => {
         fs.unlink(path, () => {});
-        console.error(`Error downloading the file: ${err.message}`);
+        logger.info(`Error downloading the file: ${err.message}`);
         reject(err);
       });
   });
@@ -88,7 +89,7 @@ function getFolderSize(folderPath: string): number {
 }
 
 export async function checkAndCleanPublicFolder() {
-  console.log('Cleaning up');
+  logger.info('Cleaning up');
   const MAX_SIZE = 25 * 1024 * 1024 * 1024; // 25GB in bytes
   const publicFolderPath = './public';
 
@@ -98,7 +99,7 @@ export async function checkAndCleanPublicFolder() {
     id: number
   ) {
     if (type === 'video') {
-      console.log('Deleting video,' + tiktokID);
+      logger.info('Deleting video,' + tiktokID);
       const videoFilePath = path.join(
         publicFolderPath,
         'videos',
@@ -118,7 +119,7 @@ export async function checkAndCleanPublicFolder() {
         fs.rmSync(thumbnailFilePath);
       }
     } else if (type === 'carousel') {
-      console.log('Deleting carousel, ' + tiktokID);
+      logger.info('Deleting carousel, ' + tiktokID);
       const audioFilePath = path.join(
         publicFolderPath,
         'audio',
@@ -138,7 +139,7 @@ export async function checkAndCleanPublicFolder() {
 
   async function cleanFolder() {
     const folderSize = getFolderSize(publicFolderPath);
-    console.log({
+    logger.info({
       folderSize,
       MAX_SIZE,
     });

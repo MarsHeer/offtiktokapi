@@ -14,6 +14,7 @@ import xbogus from 'xbogus';
 import path from 'path';
 import { downloadFileHelper, ensureDirectoryExistence } from './disk-utils';
 import { parsedVideoData } from './zod';
+import logger from './logger';
 
 export const userAgent =
   'Mozilla/5.0 (X11; Linux x86_64; rv:91.0) Gecko/20100101 Firefox/91.1';
@@ -69,7 +70,7 @@ export const parseTikTokData = async (res: Response) => {
       throw new Error('Empty response content');
     }
 
-    console.log('Response content length:', textContent.length);
+    logger.info('Response content length:', textContent.length);
 
     const dom = new jsdom.JSDOM(textContent);
     const rehydrationElement = dom.window.document.querySelector(
@@ -77,7 +78,7 @@ export const parseTikTokData = async (res: Response) => {
     );
 
     if (!rehydrationElement) {
-      console.error('Rehydration element not found in DOM');
+      logger.info('Rehydration element not found in DOM');
       // Try fallback data extraction
       const scriptElements = dom.window.document.querySelectorAll('script');
       for (const script of scriptElements) {
@@ -144,7 +145,7 @@ export const fetchAndFollowURL = async (url: string) => {
   let parsedURL = new URL(url);
   setTimeout(() => {
     controller.abort();
-  }, 1000 * 5);
+  }, 1000 * 50);
   let fetchContent = await fetch(decodeURI, {
     signal: controller.signal,
     headers: {
@@ -152,7 +153,7 @@ export const fetchAndFollowURL = async (url: string) => {
     },
   });
   const fetchURL = fetchContent.url;
-  console.log(fetchContent.url);
+  logger.info(fetchContent.url);
   if (
     fetchContent.status === 301 ||
     fetchContent.status === 302 ||
@@ -163,7 +164,7 @@ export const fetchAndFollowURL = async (url: string) => {
         ? fetchContent.headers.get('location')
         : fetchURL;
     if (redirectLocation) {
-      console.log(`Redirected from ${url} to ${redirectLocation}`);
+      logger.info(`Redirected from ${url} to ${redirectLocation}`);
       parsedURL = new URL(redirectLocation);
       fetchContent = await fetch(redirectLocation, {
         headers: {
@@ -249,7 +250,7 @@ export const pullVideoData = async (
   if (parsedData.success) {
     return parsedData.data;
   } else {
-    console.log(dataObject);
+    logger.info(dataObject);
     return new Error('Data hold unexpected format');
   }
 };

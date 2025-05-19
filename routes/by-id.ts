@@ -5,6 +5,7 @@ import {
   fetchSessionByToken,
 } from '../utils/db-helpers';
 import { downloadPostByUrl } from '../utils/tiktok-api-wrappers';
+import logger from '../utils/logger';
 
 export const getVideoById: RequestHandler = async (req, res) => {
   try {
@@ -34,7 +35,7 @@ export const getVideoById: RequestHandler = async (req, res) => {
       res.send(postData);
       return;
     } else {
-      console.log(postData);
+      logger.info(postData);
       res.status(500).send({
         error: 'Video is unavailable',
       });

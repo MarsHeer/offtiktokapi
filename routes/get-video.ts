@@ -13,6 +13,7 @@ import {
   justFetchPost,
 } from '../legacy/old-fetching-helpers';
 import { checkAndCleanPublicFolder } from '../utils/disk-utils';
+import logger from '../utils/logger';
 
 const tiktoks = [
   //video
@@ -39,10 +40,10 @@ export const getRelatedVideos: RequestHandler = async (req, res) => {
         userSession = await createSession(sessionParsed);
       }
     }
-    console.log('Running quickfetch');
+    logger.info('Running quickfetch');
 
     const fetchRelatedPosts = await getRelatedPosts(url, userSession?.token);
-    console.log({
+    logger.info({
       fetchRelatedPosts,
     });
     if (!fetchRelatedPosts || fetchRelatedPosts instanceof Error) {
@@ -62,7 +63,7 @@ export const getRelatedVideos: RequestHandler = async (req, res) => {
     }
   } finally {
     checkAndCleanPublicFolder().catch(() => {
-      console.log('Error cleaning public folder');
+      logger.info('Error cleaning public folder');
     });
   }
 };
@@ -70,31 +71,31 @@ export const getRelatedVideos: RequestHandler = async (req, res) => {
 export const getVideo: RequestHandler = async (req, res) => {
   try {
     const { url } = req.params;
-    console.log('Running quickfetch');
+    logger.info('Running quickfetch');
     const quickFetch = await downloadThroughFetch(url);
-    console.log({
+    logger.info({
       quickFetch,
     });
     if (quickFetch && !(quickFetch instanceof Error)) {
-      console.log('Quickfetch successful');
-      console.log('Post already exists');
-      console.log(quickFetch.id);
-      console.log('Is deleted: ', quickFetch.deleted);
+      logger.info('Quickfetch successful');
+      logger.info('Post already exists');
+      logger.info(quickFetch.id);
+      logger.info('Is deleted: ', quickFetch.deleted);
       if (quickFetch.deleted) {
-        console.log("Fetching post again because it's deleted");
+        logger.info("Fetching post again because it's deleted");
         const post = await justFetchPost(
           quickFetch.originalURL.length > 0 ? quickFetch.originalURL : url
         );
-        console.log('Post fetched');
-        console.log({
+        logger.info('Post fetched');
+        logger.info({
           post,
         });
       }
       res.send(quickFetch);
       return;
     } else {
-      console.log('Quickfetch failed, fetching by URL');
-      console.log(quickFetch);
+      logger.info('Quickfetch failed, fetching by URL');
+      logger.info(quickFetch);
       res.status(500).send({
         error: 'Video is unavailable',
       });
@@ -113,13 +114,13 @@ export const getVideo: RequestHandler = async (req, res) => {
       const findPost = await fetchPostByTiktokId(tiktokId);
 
       if (findPost) {
-        console.log('Post already exists');
+        logger.info('Post already exists');
         res.send(findPost);
         return;
       } else {
-        console.log('Post does not exist, creating');
+        logger.info('Post does not exist, creating');
         const newPost = await getPost(url, postData);
-        console.log({
+        logger.info({
           newPost,
         });
         res.send(newPost);
@@ -139,7 +140,7 @@ export const getVideo: RequestHandler = async (req, res) => {
     }
   } finally {
     checkAndCleanPublicFolder().catch(() => {
-      console.log('Error cleaning public folder');
+      logger.info('Error cleaning public folder');
     });
   }
 };
@@ -165,9 +166,9 @@ export const getVideoById: RequestHandler = async (req, res) => {
     const findPost = await fetchPostById(parseInt(id));
 
     if (findPost) {
-      console.log('Post already exists');
-      console.log(findPost.id);
-      console.log('Is deleted: ', findPost.deleted);
+      logger.info('Post already exists');
+      logger.info(findPost.id);
+      logger.info('Is deleted: ', findPost.deleted);
       if (findPost.deleted && findPost.originalURL) {
         await justFetchPost(findPost.originalURL);
       } else if (findPost.deleted && !findPost.originalURL.length) {
@@ -190,7 +191,7 @@ export const getVideoById: RequestHandler = async (req, res) => {
         return;
       }
     } else {
-      console.log('Post does not exist');
+      logger.info('Post does not exist');
       res
         .send({
           error: 'Post does not exist',
@@ -207,7 +208,7 @@ export const getVideoById: RequestHandler = async (req, res) => {
     }
   } finally {
     checkAndCleanPublicFolder().catch(() => {
-      console.log('Error cleaning public folder');
+      logger.info('Error cleaning public folder');
     });
   }
 };

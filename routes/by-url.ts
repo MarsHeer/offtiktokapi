@@ -5,6 +5,7 @@ import {
   URL_SANS_BOGUS,
 } from '../utils/tiktok-api-wrappers';
 import { checkAndCleanPublicFolder } from '../utils/disk-utils';
+import logger from '../utils/logger';
 
 export const getVideoByUrl: RequestHandler = async (req, res) => {
   try {
@@ -25,7 +26,7 @@ export const getVideoByUrl: RequestHandler = async (req, res) => {
       res.send(postData);
       return;
     } else {
-      console.log(postData);
+      logger.info(postData);
       res.status(500).send({
         error: 'Video is unavailable',
       });
@@ -40,7 +41,7 @@ export const getVideoByUrl: RequestHandler = async (req, res) => {
     }
   } finally {
     checkAndCleanPublicFolder().catch(() => {
-      console.log('Error cleaning public folder');
+      logger.info('Error cleaning public folder');
     });
   }
 };

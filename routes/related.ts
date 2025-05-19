@@ -10,6 +10,7 @@ import {
   URL_SANS_BOGUS,
 } from '../utils/tiktok-api-wrappers';
 import { checkAndCleanPublicFolder } from '../utils/disk-utils';
+import logger from '../utils/logger';
 
 export const getRelatedVideos: RequestHandler = async (req, res) => {
   try {
@@ -68,7 +69,7 @@ export const getRelatedVideos: RequestHandler = async (req, res) => {
     }
   } finally {
     checkAndCleanPublicFolder().catch(() => {
-      console.log('Error cleaning public folder');
+      logger.info('Error cleaning public folder');
     });
   }
 };
