@@ -16,7 +16,6 @@ import {
   restorePost,
   updateVideo,
 } from '../utils/db-helpers';
-import { convertToHLS } from '../utils/video-processing';
 
 export const downloadFileHelper = async (
   url: string,
@@ -343,24 +342,6 @@ export const downloadThroughFetch = async (url: string) => {
           postId: postData.id,
         });
 
-        const toHLS = {
-          hlsPath: path.join(process.cwd(), 'public', 'hls', declaredPostID),
-          hlsOutput: `/hls/${declaredPostID}/output.m3u8`,
-          videoPath,
-        };
-
-        convertToHLS(toHLS.videoPath, toHLS.hlsPath, async (err, output) => {
-          if (err) {
-            console.log(err);
-          } else if (output) {
-            console.log('Updating');
-            await updateVideo({
-              hlsVideo: toHLS.hlsOutput,
-              postId: postData.id,
-            });
-          }
-        });
-
         const fetchData = await fetchPostByTiktokId(declaredPostID);
         return fetchData;
       }
@@ -534,28 +515,6 @@ export const justFetchPost = async (url: string) => {
           videoPath,
           formattedCookies
         );
-
-        const toHLS = {
-          hlsPath: path.join(process.cwd(), 'public', 'hls', declaredPostID),
-          hlsOutput: `/hls/${declaredPostID}/output.m3u8`,
-          videoPath,
-        };
-
-        convertToHLS(toHLS.videoPath, toHLS.hlsPath, async (err, output) => {
-          if (err) {
-            console.log(err);
-          } else if (output) {
-            const oldVideo = await findVideoByTiktokID(declaredPostID);
-
-            if (oldVideo && oldVideo.id) {
-              console.log('Updating');
-              await updateVideo({
-                hlsVideo: toHLS.hlsOutput,
-                postId: oldVideo.id,
-              });
-            }
-          }
-        });
 
         const coverPath = `./public/thumbnails/${declaredPostID}.jpg`;
         const coverDirPath = path.join(process.cwd(), 'public', 'thumbnails');
@@ -834,24 +793,6 @@ export const getRelatedPosts = async (url: string, session?: string) => {
           mp4video: videoPath.replace('./public', ''),
           thumbnail: coverPath.replace('./public', ''),
           postId: postData.id,
-        });
-
-        const toHLS = {
-          hlsPath: path.join(process.cwd(), 'public', 'hls', declaredPostID),
-          hlsOutput: `/hls/${declaredPostID}/output.m3u8`,
-          videoPath,
-        };
-
-        convertToHLS(toHLS.videoPath, toHLS.hlsPath, async (err, output) => {
-          if (err) {
-            console.log(err);
-          } else if (output) {
-            console.log('Updating');
-            await updateVideo({
-              hlsVideo: toHLS.hlsOutput,
-              postId: postData.id,
-            });
-          }
         });
 
         const fetchData = await fetchPostByTiktokId(declaredPostID);
