@@ -9,13 +9,10 @@ import {
   fetchSessionByToken,
   findAuthorByTiktokId,
   restorePost,
-  updateVideo,
 } from './db-helpers';
 import xbogus from 'xbogus';
-import { z } from 'zod';
-import path, { join } from 'path';
+import path from 'path';
 import { downloadFileHelper, ensureDirectoryExistence } from './disk-utils';
-import { convertToHLS } from './video-processing';
 import { parsedVideoData } from './zod';
 
 export const userAgent =
@@ -427,24 +424,6 @@ export const fetchPostByUrlAndMode = async (
         originalURL: finalURL.toString(),
       });
 
-      const toHLS = {
-        hlsPath: path.join(process.cwd(), 'public', 'hls', post.id.toString()),
-        hlsOutput: `/hls/${post.id}/output.m3u8`,
-        videoPath: videoFilePath,
-      };
-
-      convertToHLS(toHLS.videoPath, toHLS.hlsPath, async (err, output) => {
-        if (err) {
-          console.log(err);
-        } else if (output) {
-          console.log('Updating');
-          await updateVideo({
-            hlsVideo: toHLS.hlsOutput,
-            postId: post.id,
-          });
-        }
-      });
-
       await createVideo({
         mp4video: `/videos/${postID}.mp4`,
         thumbnail: `/thumbnails/${postID}.jpg`,
@@ -551,14 +530,6 @@ export const downloadPostByUrl = async (url: string, originalID: number) => {
       if (video.cover) {
         downloadFileHelper(video.cover, videoDirPath, thumbnailFilePath);
       }
-
-      const toHLS = {
-        hlsPath: path.join(process.cwd(), 'public', 'hls', postID),
-        hlsOutput: `/hls/${postID}/output.m3u8`,
-        videoPath: videoFilePath,
-      };
-
-      convertToHLS(toHLS.videoPath, toHLS.hlsPath, async (err, output) => {});
     }
     await restorePost(originalID);
     return await fetchPostByTiktokId(postID);

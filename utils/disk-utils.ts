@@ -109,7 +109,6 @@ export async function checkAndCleanPublicFolder() {
         'thumbnails',
         `${tiktokID}.jpg`
       );
-      const hlsDirPath = path.join(publicFolderPath, 'hls', tiktokID);
 
       if (fs.existsSync(videoFilePath)) {
         fs.rmSync(videoFilePath);
@@ -117,10 +116,6 @@ export async function checkAndCleanPublicFolder() {
 
       if (fs.existsSync(thumbnailFilePath)) {
         fs.rmSync(thumbnailFilePath);
-      }
-
-      if (fs.existsSync(hlsDirPath)) {
-        fs.rmSync(hlsDirPath, { recursive: true });
       }
     } else if (type === 'carousel') {
       console.log('Deleting carousel, ' + tiktokID);

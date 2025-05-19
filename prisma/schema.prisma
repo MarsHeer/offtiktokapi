@@ -22,7 +22,6 @@ model Carousel {
 model Video {
     id          Int    @id @default(autoincrement())
     mp4URL      String
-    hlsURL      String?
     thumbnail   String?
     post        Post?  @relation(fields: [postId], references: [id])
     postId      Int?   @unique
