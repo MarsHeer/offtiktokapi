@@ -3,6 +3,7 @@ import https from 'node:https';
 import path from 'path';
 import { deletePost, fetchOldestPost } from './db-helpers';
 import logger from './logger';
+import { spawn } from 'child_process';
 
 // Ensure the directory exists before writing the file
 export const ensureDirectoryExistence = (filePath: string) => {
@@ -17,47 +18,46 @@ export const ensureDirectoryExistence = (filePath: string) => {
 export const downloadFileHelper = async (
   url: string,
   dirPath: string,
-  path: string,
+  filePath: string,
   cookies?: string
 ): Promise<void> => {
-  ensureDirectoryExistence(path);
-
-  const file = fs.createWriteStream(path);
-
-  let options = {};
-
-  if (cookies) {
-    options = {
-      headers: {
-        Credentials: 'same-origin',
-        Cookie: cookies,
-      },
-    };
-  }
-
-  if (cookies) {
-    logger.info(`curl -v ${path} -H "Cookie: ${cookies}" "${url}"`);
-  }
+  ensureDirectoryExistence(filePath);
 
   return new Promise((resolve, reject) => {
-    https
-      .get(url, options, (response) => {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close(() => {
-            if (cookies) {
-              logger.info('Download completed!');
-              logger.info({ path: file.path });
-            }
-            resolve();
-          });
-        });
-      })
-      .on('error', (err) => {
-        fs.unlink(path, () => {});
-        logger.info(`Error downloading the file: ${err.message}`);
-        reject(err);
-      });
+    const args = [
+      url,
+      '-o',
+      filePath,
+      '--no-part', // Avoid .part files for atomicity
+      '--no-mtime', // Don't preserve mtime
+    ];
+    // Uncomment below to use cookies (yt-dlp expects a cookies.txt file)
+    // if (cookies) {
+    //   const cookiesFile = path.join(dirPath, 'cookies.txt');
+    //   fs.writeFileSync(cookiesFile, cookies, 'utf8');
+    //   args.push('--cookies', cookiesFile);
+    // }
+    logger.info(`[yt-dlp] Command: yt-dlp ${args.map(a => JSON.stringify(a)).join(' ')}`);
+    const ytDlp = spawn('yt-dlp', args);
+
+    ytDlp.stdout.on('data', (data) => {
+      logger.info(`[yt-dlp stdout] ${data}`);
+    });
+    ytDlp.stderr.on('data', (data) => {
+      logger.info(`[yt-dlp stderr] ${data}`);
+    });
+    ytDlp.on('error', (err) => {
+      logger.error(`yt-dlp process error: ${err.message}`);
+      reject(err);
+    });
+    ytDlp.on('close', (code, signal) => {
+      logger.info(`[yt-dlp] exited with code ${code}, signal ${signal}`);
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`yt-dlp exited with code ${code}, signal ${signal}`));
+      }
+    });
   });
 };
 
