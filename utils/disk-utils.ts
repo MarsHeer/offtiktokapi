@@ -1,5 +1,6 @@
 import fs from 'fs';
 import https from 'node:https';
+import http from 'node:http';
 import path from 'path';
 import { deletePost, fetchOldestPost } from './db-helpers';
 import logger from './logger';
@@ -14,50 +15,127 @@ export const ensureDirectoryExistence = (filePath: string) => {
   return true;
 };
 
+const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
 export const downloadFileHelper = async (
   url: string,
   dirPath: string,
-  path: string,
+  filePath: string,
   cookies?: string
 ): Promise<void> => {
-  ensureDirectoryExistence(path);
+  ensureDirectoryExistence(filePath);
 
-  const file = fs.createWriteStream(path);
-
-  let options = {};
-
-  if (cookies) {
-    options = {
-      headers: {
-        Credentials: 'same-origin',
-        Cookie: cookies,
-      },
-    };
+  // Delete any existing partial download
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
   }
 
-  if (cookies) {
-    logger.info(`curl -v ${path} -H "Cookie: ${cookies}" "${url}"`);
-  }
+  const headers = {
+    'User-Agent': USER_AGENT,
+    Accept: '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'identity', // Prevent gzip to avoid corruption
+    Connection: 'keep-alive',
+    Range: 'bytes=0-', // Support range requests
+    Referer: 'https://www.tiktok.com/',
+    ...(cookies ? { Cookie: cookies } : {}),
+  };
 
   return new Promise((resolve, reject) => {
-    https
-      .get(url, options, (response) => {
-        response.pipe(file);
-        file.on('finish', () => {
-          file.close(() => {
-            if (cookies) {
-              logger.info('Download completed!');
-              logger.info({ path: file.path });
-            }
-            resolve();
-          });
+    const handleResponse = (response: http.IncomingMessage) => {
+      // Handle redirects
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        const redirectUrl = response.headers.location;
+        if (!redirectUrl) {
+          reject(new Error('Redirect location not found'));
+          return;
+        }
+        logger.info(`Following redirect to: ${redirectUrl}`);
+        const redirectReq = https.get(redirectUrl, { headers }, handleResponse);
+        redirectReq.on('error', reject);
+        return;
+      }
+
+      // Check content type
+      const contentType = response.headers['content-type'];
+      if (
+        !contentType?.includes('video') &&
+        !contentType?.includes('audio') &&
+        !contentType?.includes('image')
+      ) {
+        reject(new Error(`Unexpected content type: ${contentType}`));
+        return;
+      }
+
+      // Check content length
+      const contentLength = parseInt(
+        response.headers['content-length'] || '0',
+        10
+      );
+      if (contentLength === 0) {
+        reject(new Error('Content length is 0'));
+        return;
+      }
+
+      logger.info(`Downloading file: ${filePath}`);
+      logger.info(`Content-Type: ${contentType}`);
+      logger.info(`Content-Length: ${contentLength} bytes`);
+
+      const file = fs.createWriteStream(filePath);
+      let downloadedBytes = 0;
+
+      response.on('data', (chunk) => {
+        downloadedBytes += chunk.length;
+        if (downloadedBytes % (1024 * 1024) === 0) {
+          // Log every MB
+          logger.info(
+            `Downloaded: ${(downloadedBytes / (1024 * 1024)).toFixed(2)}MB`
+          );
+        }
+      });
+
+      response.pipe(file);
+
+      file.on('finish', () => {
+        file.close(() => {
+          // Verify file size
+          const finalSize = fs.statSync(filePath).size;
+          if (contentLength > 0 && finalSize !== contentLength) {
+            fs.unlinkSync(filePath);
+            reject(
+              new Error(
+                `File size mismatch. Expected: ${contentLength}, Got: ${finalSize}`
+              )
+            );
+            return;
+          }
+          logger.info(`Download completed: ${filePath}`);
+          logger.info(
+            `Final size: ${(finalSize / (1024 * 1024)).toFixed(2)}MB`
+          );
+          resolve();
         });
-      })
-      .on('error', (err) => {
-        fs.unlink(path, () => {});
-        logger.info(`Error downloading the file: ${err.message}`);
+      });
+
+      file.on('error', (err) => {
+        fs.unlink(filePath, () => {});
         reject(err);
       });
+    };
+
+    const request = https.get(url, { headers }, handleResponse);
+    request.on('error', (err) => {
+      fs.unlink(filePath, () => {});
+      reject(err);
+    });
+
+    // Set a timeout
+    request.setTimeout(30000, () => {
+      request.destroy();
+      fs.unlink(filePath, () => {});
+      reject(new Error('Download timeout'));
+    });
   });
 };
 
