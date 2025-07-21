@@ -402,17 +402,12 @@ export const fetchPostByUrlAndMode = async (
     } else if (video) {
       const videoDirPath = path.join(process.cwd(), 'public', 'videos');
       const videoFilePath = path.join(videoDirPath, `${postID}.mp4`);
-      // Use the original TikTok URL for yt-dlp, not the CDN/playAddr
       if (video.url) {
-        // Try to use the original TikTok post URL
-        const tiktokPostUrl = author && postID
-          ? `https://www.tiktok.com/@${author.handle}/video/${postID}`
-          : finalURL.toString();
         await downloadFileHelper(
-          tiktokPostUrl,
+          video.url,
           videoDirPath,
-          videoFilePath
-          // joinedCookies // Only needed if you want to pass cookies
+          videoFilePath,
+          joinedCookies
         );
       }
 
